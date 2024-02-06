@@ -74,7 +74,7 @@ client.on('interactionCreate', async interaction => {
                 await interaction.reply({ content: '플레이 하실 게임을 입력 해주세요.', ephemeral: true })
             } else if (gameName === 'ladder') {
                 let ladderResult = ladder();
-                let battingUser = await ladderBattingUser(), prizeUser = [], printPrizeUser = '';
+                let battingUser = await BattingUser(gameName), prizeUser = [], printPrizeUser = '';
                 let prizeEmbed;
                 for (let i = 0; i < battingUser.length; i++) {
                     if (battingUser[i].choice === ladderResult.start || battingUser[i].choice === ladderResult.line || battingUser[i].choice === ladderResult.last) {
@@ -113,7 +113,6 @@ client.on('interactionCreate', async interaction => {
     if (interaction.commandName === '사다리배팅') {
         let join = await joinCheck(interaction.user.id);
         if (join) {
-            let completed;
             let user = await getUserInfo(interaction.user.id);
             let battingChoice = interaction.options.getString('선택');
             let battingMoney = interaction.options.getNumber('금액');
@@ -125,7 +124,7 @@ client.on('interactionCreate', async interaction => {
                     await db.run('update user set money = money - ? where id = ?', [battingMoney, interaction.user.id]);
                     await db.run('insert into ladderBatting (id, choice, money) values (?, ?, ?)', [interaction.user.id, battingChoice, battingMoney]);
                     interaction.reply({ content: '"' + battingChoice + '"에 ' + battingMoney + '원을 배팅하였습니다.', ephemeral: true });
-                }, 500);
+                }, 100);
             } else {
                 await interaction.reply({ content: '돈이 부족합니다.', ephemeral: true });
             }
@@ -189,9 +188,15 @@ function ladder() {
     }
 }
 
-function ladderBattingUser() {
+function BattingUser(game) {
+    let table;
+    if (game === '사다리') {
+        table = "ladderBatting";
+    } else if (game === '파워볼') {
+        table = "powerballBatting"
+    }
     return new Promise((resolve, reject) => {
-        db.all('select user.id, user.nickName, ladderBatting.choice, ladderBatting.money from ladderBatting inner join user on ladderBatting.id = user.id', (err, rows) => {
+        db.all(`SELECT user.id, user.nickName, ${table}.choice, ${table}.money FROM ${table} INNER JOIN user ON ${table}.id = user.id`, (err, rows) => {
             if (err) {
                 reject(err);
             } else {
