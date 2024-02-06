@@ -118,7 +118,9 @@ client.on('interactionCreate', async interaction => {
             let battingChoice = interaction.options.getString('선택');
             let battingMoney = interaction.options.getNumber('금액');
 
-            if (user.money >= battingMoney) {
+            if (battingMoney < 100) {
+                await interaction.reply({ content: '최소 배팅 금액은 100원 입니다.', ephemeral: true });
+            } else if (user.money >= battingMoney) {
                 setTimeout(async () => {
                     await db.run('update user set money = money - ? where id = ?', [battingMoney, interaction.user.id]);
                     await db.run('insert into ladderBatting (id, choice, money) values (?, ?, ?)', [interaction.user.id, battingChoice, battingMoney]);
